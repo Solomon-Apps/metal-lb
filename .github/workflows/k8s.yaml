@@ -1,0 +1,34 @@
+name: "Deploy MetalLB"
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  docker:
+    name: "Deploy MetalLB"
+    runs-on: self-hosted
+    environment: "Docker"
+    env:
+      DOCKER_TLS_VERIFY: ""
+      DOCKER_BUILDKIT: 1
+      DOCKER_CLI_EXPERIMENTAL: enabled
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: Dry Run Deploy to K8s
+        uses: actions-hub/kubectl@master
+        if: github.event_name == 'pull_request'
+        with:
+          args: apply -f deployment/ --dry-run=client
+
+      - name: Deploy to K8s
+        uses: actions-hub/kubectl@master
+        if: github.event_name == 'push'
+        with:
+          args: apply -f deployment/
